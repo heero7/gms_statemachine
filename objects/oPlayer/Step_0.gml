@@ -4,6 +4,8 @@ playerInput(true);
 movingDirection = inputRight - inputLeft;
 grounded = place_meeting(x, y + 1, oWall);
 
+// Begin Timers if they haven't already.
+
 
 switch (state) {
 	case PLAYERSTATE.SPAWN: {
@@ -69,11 +71,14 @@ switch (state) {
 	}
 		break;
 	case PLAYERSTATE.RISING: {
-		verticalSpeed = jumpHeight;
+		if (inputJump_released) verticalSpeed = jumpHeight / 4;
+		else verticalSpeed = jumpHeight;
 		verticalSpeed = checkVerticalCollisions(verticalSpeed);
 		y += verticalSpeed;
 		
 		if (movingDirection != 0) facingDir = sign(movingDirection);
+		if (inputDash_held) horizontalSpeed = movingDirection * walkSpeed;
+		else horizontalSpeed = movingDirection * walkSpeed * airFriction;
 		horizontalSpeed = movingDirection * walkSpeed * airFriction;
 		horizontalSpeed = checkHorizontalCollisions(horizontalSpeed);
 		x += horizontalSpeed;
@@ -87,17 +92,22 @@ switch (state) {
 		verticalSpeed = checkVerticalCollisions(verticalSpeed);
 		y += verticalSpeed;
 		
-		//if (inputDash_pressed) {
-		//	state = PLAYERSTATE.DASH;
-		//	return;
-		//}
+		if (inputDash_pressed 
+			&& canAerialDash
+			/*&& prevState != PLAYERSTATE.DASH*/) {
+			prevState = state;
+			state = PLAYERSTATE.DASH;
+			return;
+		}
 		
 		if (movingDirection != 0) facingDir = sign(movingDirection);
-		horizontalSpeed = movingDirection * walkSpeed * airFriction;
+		if (inputDash_held) horizontalSpeed = movingDirection * walkSpeed;
+		else horizontalSpeed = movingDirection * walkSpeed * airFriction;
 		horizontalSpeed = checkHorizontalCollisions(horizontalSpeed);
 		x += horizontalSpeed;
 		
-		if (grounded) { 
+		if (grounded) {
+			canAerialDash = true;
 			state = PLAYERSTATE.IDLE;
 		}
 		break;
@@ -114,7 +124,13 @@ switch (state) {
 			|| (directionDetection
 				&& movingDirection != facingDir)
 			/*||  [Probably don't need this] (place_meeting(x, y + facingDir, oWall))*/) {
+			if (prevState == PLAYERSTATE.FALLING) {
+				verticalSpeed = 0;
+				canAerialDash = false;
+				alarm[0] = 30;
+			}
 			state = prevState;
+			prevState = PLAYERSTATE.DASH;
 			dashTimer = 0;
 		}
 	}
