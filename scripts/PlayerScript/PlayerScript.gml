@@ -15,7 +15,7 @@ function playerInput(hasControl) {
 		inputDown = 0;
 		inputJump = 0;
 		inputAttack = 0;
-		inputDash = 0;
+		inputDash_pressed = 0;
 		return;
 	}
 	inputRight = keyboard_check(vk_right);
@@ -23,7 +23,8 @@ function playerInput(hasControl) {
 	inputDown = keyboard_check(vk_down);
 	inputJump = keyboard_check(vk_space);
 	inputAttack = keyboard_check(ord("X"));
-	inputDash = keyboard_check(ord("Z"));
+	inputDash_pressed = keyboard_check_pressed(ord("Z"));
+	inputDash_released = keyboard_check_released(ord("Z"));
 }
 
 // Horizontal Collisions

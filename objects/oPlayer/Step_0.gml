@@ -3,6 +3,8 @@
 playerInput(true);
 movingDirection = inputRight - inputLeft;
 grounded = place_meeting(x, y + 1, oWall);
+
+
 switch (state) {
 	case PLAYERSTATE.SPAWN: {
 		playerInput(false);
@@ -18,7 +20,10 @@ switch (state) {
 			&& grounded) state = PLAYERSTATE.RUNNING;
 		if (inputJump) state = PLAYERSTATE.RISING;
 		if (inputDown) state = PLAYERSTATE.CROUCH;
-		if (inputDash) state = PLAYERSTATE.DASH;
+		if (inputDash_pressed) {
+			prevState = state;
+			state = PLAYERSTATE.DASH;
+		}
 	}
 		break;
 	case PLAYERSTATE.CROUCH: {
@@ -39,6 +44,10 @@ switch (state) {
 			
 			
 			if (horizontalSpeed != 0) state = PLAYERSTATE.RUNNING;
+			if (inputDash_pressed) {
+				prevState = state;
+				state = PLAYERSTATE.DASH;
+			}
 			else state = PLAYERSTATE.IDLE;
 		}
 	}
@@ -53,6 +62,10 @@ switch (state) {
 		if (inputJump) state = PLAYERSTATE.RISING;
 		if (grounded && movingDirection == 0) state = PLAYERSTATE.IDLE;
 		if (inputDown) state = PLAYERSTATE.CROUCH;
+		if (inputDash_pressed) {
+			prevState = state;
+			state = PLAYERSTATE.DASH;
+		}
 	}
 		break;
 	case PLAYERSTATE.RISING: {
@@ -69,22 +82,15 @@ switch (state) {
 		if (verticalSpeed < 0) state = PLAYERSTATE.FALLING;
 	}
 		break;
-	case PLAYERSTATE.FALLING:
-
-		
-		// if (prevState == PLAYERSTATE.DASH) { verticalSpeed = 1; }
-		// else verticalSpeed = applyGravity(verticalSpeed, playerGrv);
+	case PLAYERSTATE.FALLING: {
 		verticalSpeed = applyGravity(verticalSpeed, playerGrv);
-		// show_debug_message("VSP[gravity]: " + string(verticalSpeed));
 		verticalSpeed = checkVerticalCollisions(verticalSpeed);
-		// show_debug_message("VSP[verify coll]: " + string(verticalSpeed));
 		y += verticalSpeed;
-		show_debug_message("[Y-Axis](Falling): " + string(y));
 		
-		if (inputDash) {
-			state = PLAYERSTATE.DASH;
-			return;
-		}
+		//if (inputDash_pressed) {
+		//	state = PLAYERSTATE.DASH;
+		//	return;
+		//}
 		
 		if (movingDirection != 0) facingDir = sign(movingDirection);
 		horizontalSpeed = movingDirection * walkSpeed * airFriction;
@@ -93,27 +99,24 @@ switch (state) {
 		
 		if (grounded) { 
 			state = PLAYERSTATE.IDLE;
-			show_debug_message("\n***********************");
 		}
 		break;
+	}
 	case PLAYERSTATE.DASH: {
-		if (dashTimer >= 30) {
-			dashTimer = 0;
-			if (!grounded) { 
-				state = PLAYERSTATE.FALLING;
-				prevState = PLAYERSTATE.DASH;
-				show_debug_message("\n***********************");
-				show_debug_message("[Y-Axis](Dash): " + string(y));
-				return;
-			}
-			state = PLAYERSTATE.IDLE;
-			return;
-		}
-		show_debug_message("!!![Y-Axis](Dash Height): " + string(y));
 		dashTimer++;
-		horizontalSpeed = dashSpeed * facingDir;
+		horizontalSpeed = facingDir * dashSpeed;
 		horizontalSpeed = checkHorizontalCollisions(horizontalSpeed);
 		x += horizontalSpeed;
+		var directionDetection = movingDirection != 0; 
+		if (dashTimer >= 15 
+			|| (inputDash_released
+				&& movingDirection == 0)
+			|| (directionDetection
+				&& movingDirection != facingDir)
+			/*||  [Probably don't need this] (place_meeting(x, y + facingDir, oWall))*/) {
+			state = prevState;
+			dashTimer = 0;
+		}
 	}
 		break;
 		
